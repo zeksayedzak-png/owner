@@ -1,113 +1,59 @@
--- سكريبت: نظام حفظ واستدعاء Blarants
+-- سكريبت: خلق Blarant جديد (بخصائص مطابقة للأصلي)
 local player = game.Players.LocalPlayer
-local mouse = player:GetMouse()
 
--- 1. متغيرات التخزين
-local savedBlarant = nil  -- سيحفظ المسار والبيانات
-local isMonitoring = false
+-- 1. خصائص Blarant (من التحليل السابق)
+local blarantSize = Vector3.new(3.252685070037842, 6.6088786125183105, 7.616645812988281)
+local blarantColor = Color3.new(0.639216, 0.635294, 0.647059)
+local blarantMaterial = Enum.Material.Plastic
 
 -- 2. إنشاء واجهة التحكم
 local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "BlarantManager"
+screenGui.Name = "BlarantCreator"
 screenGui.Parent = player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 200)
-frame.Position = UDim2.new(0.5, -125, 0.7, 0)
+frame.Size = UDim2.new(0, 220, 0, 80)
+frame.Position = UDim2.new(0.5, -110, 0.8, 0)
 frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 frame.BackgroundTransparency = 0.5
 frame.BorderSizePixel = 2
-frame.BorderColor3 = Color3.fromRGB(0, 255, 0)
+frame.BorderColor3 = Color3.fromRGB(255, 0, 255)
 frame.Active = true
 frame.Draggable = true
 frame.Parent = screenGui
 
--- زر تشغيل
-local startButton = Instance.new("TextButton")
-startButton.Size = UDim2.new(0, 100, 0, 30)
-startButton.Position = UDim2.new(0.1, 0, 0.2, 0)
-startButton.Text = "▶ تشغيل"
-startButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-startButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-startButton.Font = Enum.Font.GothamBold
-startButton.Parent = frame
+local createButton = Instance.new("TextButton")
+createButton.Size = UDim2.new(0, 180, 0, 40)
+createButton.Position = UDim2.new(0.5, -90, 0.5, -20)
+createButton.Text = "✨ خلق Blarant جديد"
+createButton.BackgroundColor3 = Color3.fromRGB(200, 0, 200)
+createButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+createButton.Font = Enum.Font.GothamBold
+createButton.Parent = frame
 
--- زر إيقاف
-local stopButton = Instance.new("TextButton")
-stopButton.Size = UDim2.new(0, 100, 0, 30)
-stopButton.Position = UDim2.new(0.55, 0, 0.2, 0)
-stopButton.Text = "⏹ إيقاف"
-stopButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
-stopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-stopButton.Font = Enum.Font.GothamBold
-stopButton.Parent = frame
-
--- زر حذف المعلومات
-local deleteButton = Instance.new("TextButton")
-deleteButton.Size = UDim2.new(0, 100, 0, 30)
-deleteButton.Position = UDim2.new(0.1, 0, 0.5, 0)
-deleteButton.Text = "🗑️ حذف المعلومات"
-deleteButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-deleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-deleteButton.Font = Enum.Font.GothamBold
-deleteButton.Parent = frame
-
--- زر استدعاء
-local summonButton = Instance.new("TextButton")
-summonButton.Size = UDim2.new(0, 100, 0, 30)
-summonButton.Position = UDim2.new(0.55, 0, 0.5, 0)
-summonButton.Text = "🌀 استدعاء"
-summonButton.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
-summonButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-summonButton.Font = Enum.Font.GothamBold
-summonButton.Parent = frame
-
--- حالة السكريبت
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0, 230, 0, 20)
-statusLabel.Position = UDim2.new(0.5, -115, 0, 0.8)
-statusLabel.Text = "⚪ غير نشط"
+statusLabel.Size = UDim2.new(0, 200, 0, 20)
+statusLabel.Position = UDim2.new(0.5, -100, 0, 5)
+statusLabel.Text = "⚪ اضغط لخلق Blarant"
 statusLabel.BackgroundTransparency = 1
-statusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+statusLabel.TextColor3 = Color3.fromRGB(255, 0, 255)
 statusLabel.TextSize = 10
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.Parent = frame
 
--- 3. وظيفة حفظ الـ Blarant (الذي تم الضغط عليه)
-local function saveBlarant(part)
-    if not isMonitoring then return end
-    if not part:IsA("BasePart") then return end
-    
-    -- حفظ بيانات الـ Blarant (مسار كامل، حجم، لون، مادة، إلخ)
-    savedBlarant = {
-        path = part:GetFullName(),
-        size = part.Size,
-        color = part.Color,
-        material = part.Material,
-        position = part.Position
-    }
-    statusLabel.Text = "✅ تم حفظ Blarant: " .. part.Name
-    print("✅ تم حفظ Blarant:", savedBlarant.path)
-end
-
--- 4. وظيفة استدعاء الـ Blarant المحفوظ
-local function summonBlarant()
-    if not savedBlarant then
-        statusLabel.Text = "❌ لا يوجد Blarant محفوظ"
-        return
-    end
-    
+-- 3. وظيفة خلق Blarant
+local function createBlarant()
     local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not hrp then
         statusLabel.Text = "❌ لا يمكن تحديد موقع اللاعب"
         return
     end
     
-    -- إنشاء نسخة جديدة من الـ Blarant (باستخدام البيانات المحفوظة)
+    -- إنشاء Part جديد (شكل Blarant)
     local newBlarant = Instance.new("Part")
-    newBlarant.Size = savedBlarant.size
-    newBlarant.Color = savedBlarant.color
-    newBlarant.Material = savedBlarant.material
+    newBlarant.Size = blarantSize
+    newBlarant.Color = blarantColor
+    newBlarant.Material = blarantMaterial
     newBlarant.Anchored = false
     newBlarant.CanCollide = false
     newBlarant.Parent = workspace
@@ -115,40 +61,22 @@ local function summonBlarant()
     -- وضعه أمام اللاعب
     newBlarant.CFrame = hrp.CFrame + Vector3.new(0, 3, 0)
     
-    statusLabel.Text = "🌀 تم استدعاء Blarant أمامك"
-    print("🌀 تم استدعاء Blarant")
+    -- إضافة ClickDetector (لجعله قابلاً للإمساك)
+    local detector = Instance.new("ClickDetector")
+    detector.Parent = newBlarant
+    
+    -- ربط حدث الإمساك (محاكاة الإمساك بـ Blarant)
+    detector.MouseClick:Connect(function()
+        newBlarant:Destroy()
+        statusLabel.Text = "🎉 تم الإمساك بـ Blarant (حصلت على جائزة)"
+        -- هنا يمكن إضافة كود منح الجائزة (عملات، خبرة، إلخ)
+    end)
+    
+    statusLabel.Text = "✅ تم خلق Blarant أمامك"
+    print("✅ تم خلق Blarant جديد")
 end
 
--- 5. وظيفة حذف المعلومات المحفوظة
-local function deleteSaved()
-    savedBlarant = nil
-    statusLabel.Text = "🗑️ تم حذف معلومات Blarant"
-    print("🗑️ تم حذف المعلومات")
-end
+-- 4. ربط الزر
+createButton.MouseButton1Click:Connect(createBlarant)
 
--- 6. مراقبة الضغط على Blarants (عند تفعيل المراقبة)
-mouse.Button1Down:Connect(function()
-    if not isMonitoring then return end
-    local target = mouse.Target
-    if target and target:IsA("BasePart") then
-        saveBlarant(target)
-    end
-end)
-
--- 7. ربط الأزرار
-startButton.MouseButton1Click:Connect(function()
-    isMonitoring = true
-    statusLabel.Text = "🟢 نشط (اضغط على أي Blarant لحفظه)"
-    print("✅ بدء المراقبة")
-end)
-
-stopButton.MouseButton1Click:Connect(function()
-    isMonitoring = false
-    statusLabel.Text = "⚪ غير نشط"
-    print("⏹️ إيقاف المراقبة")
-end)
-
-deleteButton.MouseButton1Click:Connect(deleteSaved)
-summonButton.MouseButton1Click:Connect(summonBlarant)
-
-print("✅ نظام إدارة Blarants جاهز")
+print("✅ سكريبت خلق Blarant جاهز - اضغط الزر")
