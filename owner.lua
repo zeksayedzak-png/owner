@@ -1,82 +1,74 @@
--- سكريبت: حذف نهائي لـ Hitboxes التسونامي (ومنع عودتهم)
+-- سكريبت: حذف نهائي لـ Hitboxes التسونامي (ومنع spawnها)
 local player = game.Players.LocalPlayer
 
--- 1. قائمة المسارات (من التحليل السابق)
-local hitboxPaths = {
-    "Workspace.ActiveTsunamis.LowWave.Hitbox",
-    "Workspace.Wave4_Visual.Hitbox",
-    "Workspace.Wave2_Visual.Hitbox",
-    "Workspace.Wave3_Visual.Hitbox",
-    "Workspace.WonkyWave_Visual.Hitbox",
-    "Workspace.Wave5_Visual.Hitbox",
-    "Workspace.SnakeWave_Visual.Hitbox"
+-- 1. قائمة بالصفات الفريدة لهذه الـ Hitboxes (من الكود الذي أرسلته)
+local tsunamiParts = {
+    { size = Vector3.new(2.8, 3.1, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 19.7, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 51.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 28.8, 86.7), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 34.1, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 18.1, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 33.0, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 18.5, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 19.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 28.8, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 24.4, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 28.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 70.8, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 29.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
+    { size = Vector3.new(25.5, 28.8, 112.7), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic }
 }
 
--- 2. وظيفة حذف Hitbox (نهائياً)
-local function deleteHitbox(path)
-    local parts = {}
-    for part in string.gmatch(path, "[^%.]+") do
-        table.insert(parts, part)
-    end
-    
-    local current = workspace
-    for _, partName in ipairs(parts) do
-        if current then
-            current = current:FindFirstChild(partName)
-        else
-            break
+-- 2. وظيفة حذف أي Part يطابق الصفات
+local function isTsunamiPart(part)
+    if not part:IsA("BasePart") then return false end
+    for _, data in ipairs(tsunamiParts) do
+        if part.Size == data.size and part.Color == data.color and part.Material == data.material then
+            return true
         end
     end
-    
-    if current and current:IsA("BasePart") then
-        current:Destroy()
-        print("🗑️ تم حذف: " .. path)
+    return false
+end
+
+local function deletePart(part)
+    if isTsunamiPart(part) then
+        part:Destroy()
+        print("🗑️ تم حذف: " .. part:GetFullName())
         return true
     end
     return false
 end
 
--- 3. منع إعادة spawn (بمراقبة الإضافة)
-local function blockRespawn()
-    local function onChildAdded(parent, child)
-        for _, path in ipairs(hitboxPaths) do
-            if string.find(child:GetFullName(), path) then
-                child:Destroy()
-                print("🚫 تم منع إعادة spawn: " .. child:GetFullName())
-            end
+-- 3. حذف جميع الـ Hitboxes الموجودة حالياً
+local function deleteAllExisting()
+    local count = 0
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if deletePart(obj) then
+            count = count + 1
         end
     end
-    
-    -- مراقبة `workspace` بالكامل
-    workspace.ChildAdded:Connect(onChildAdded)
-    -- مراقبة كل مجلد قد يظهر فيه Hitbox جديد
-    for _, path in ipairs(hitboxPaths) do
-        local parts = {}
-        for part in string.gmatch(path, "[^%.]+") do
-            table.insert(parts, part)
-        end
-        local current = workspace
-        for i = 1, #parts - 1 do
-            if current then
-                current = current:FindFirstChild(parts[i])
-            else
-                break
-            end
-        end
-        if current then
-            current.ChildAdded:Connect(onChildAdded)
-        end
-    end
+    print("✅ تم حذف " .. count .. " Hitbox")
+    return count
 end
 
--- 4. إنشاء واجهة التحكم
+-- 4. منع إعادة spawn (مراقبة الإضافات الجديدة)
+local function blockRespawn()
+    workspace.DescendantAdded:Connect(function(obj)
+        if deletePart(obj) then
+            print("🚫 تم منع spawn: " .. obj:GetFullName())
+        end
+    end)
+end
+
+-- 5. إنشاء واجهة التحكم
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TsunamiEraser"
 screenGui.Parent = player.PlayerGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 200, 0, 80)
-frame.Position = UDim2.new(0.5, -100, 0.8, 0)
+frame.Size = UDim2.new(0, 220, 0, 80)
+frame.Position = UDim2.new(0.5, -110, 0.8, 0)
 frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 frame.BackgroundTransparency = 0.5
 frame.BorderSizePixel = 2
@@ -86,8 +78,8 @@ frame.Draggable = true
 frame.Parent = screenGui
 
 local deleteButton = Instance.new("TextButton")
-deleteButton.Size = UDim2.new(0, 120, 0, 40)
-deleteButton.Position = UDim2.new(0.5, -60, 0.5, -20)
+deleteButton.Size = UDim2.new(0, 140, 0, 40)
+deleteButton.Position = UDim2.new(0.5, -70, 0.5, -20)
 deleteButton.Text = "🗑️ حذف التسونامي"
 deleteButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
 deleteButton.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -95,8 +87,8 @@ deleteButton.Font = Enum.Font.GothamBold
 deleteButton.Parent = frame
 
 local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(0, 180, 0, 20)
-statusLabel.Position = UDim2.new(0.5, -90, 0, 5)
+statusLabel.Size = UDim2.new(0, 200, 0, 20)
+statusLabel.Position = UDim2.new(0.5, -100, 0, 5)
 statusLabel.Text = "⚪ غير نشط"
 statusLabel.BackgroundTransparency = 1
 statusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
@@ -104,15 +96,10 @@ statusLabel.TextSize = 10
 statusLabel.Font = Enum.Font.Gotham
 statusLabel.Parent = frame
 
--- 5. تشغيل الحذف والمنع
+-- 6. تشغيل الحذف والمنع
 deleteButton.MouseButton1Click:Connect(function()
-    local count = 0
-    for _, path in ipairs(hitboxPaths) do
-        if deleteHitbox(path) then
-            count = count + 1
-        end
-    end
-    blockRespawn()  -- منع أي محاولة لإعادة spawn
+    local count = deleteAllExisting()
+    blockRespawn()
     statusLabel.Text = "🟢 تم حذف " .. count .. " Hitbox (والمنع مفعل)"
     deleteButton.Text = "✅ تم"
     deleteButton.BackgroundColor3 = Color3.fromRGB(0, 100, 0)
