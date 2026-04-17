@@ -1,10 +1,10 @@
--- سكريبت: حذف كل Hitboxes (باسمها) ومنع spawnها (تلقائي)
+-- سكريبت: مراقبة مستمرة (كل 0.5 ثانية) لحذف أي Hitbox
 local player = game.Players.LocalPlayer
 
--- 1. قائمة الأسماء المستهدفة (من التحليل السابق)
+-- 1. قائمة الأسماء المستهدفة
 local targetNames = {"Hitbox", "Hitbox1", "Hitbox2"}
 
--- 2. وظيفة التحقق من أن الـ Part هو Hitbox (باسمه فقط)
+-- 2. وظيفة التحقق من أن الـ Part هو Hitbox
 local function isHitbox(part)
     if not part:IsA("BasePart") then return false end
     for _, name in ipairs(targetNames) do
@@ -15,7 +15,7 @@ local function isHitbox(part)
     return false
 end
 
--- 3. حذف الـ Hitbox
+-- 3. وظيفة حذف الـ Hitbox
 local function deleteHitbox(part)
     if isHitbox(part) then
         part:Destroy()
@@ -25,29 +25,22 @@ local function deleteHitbox(part)
     return false
 end
 
--- 4. حذف جميع الـ Hitboxes الموجودة حالياً
-local function deleteAllExisting()
-    local count = 0
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if deleteHitbox(obj) then
-            count = count + 1
+-- 4. مراقبة مستمرة (كل 0.5 ثانية) بدلاً من الاعتماد على "spawn"
+local function continuousMonitoring()
+    while true do
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            deleteHitbox(obj)
         end
+        wait(0.5)  -- انتظر نصف ثانية ثم أعد الفحص
     end
-    print("✅ تم حذف " .. count .. " Hitbox (بداية تلقائية)")
-    return count
 end
 
--- 5. منع إعادة spawn (مراقبة الإضافات الجديدة)
-local function blockRespawn()
-    workspace.DescendantAdded:Connect(function(obj)
-        if deleteHitbox(obj) then
-            print("🚫 تم منع spawn Hitbox: " .. obj:GetFullName())
-        end
-    end)
+-- 5. حذف الموجود حالياً أولاً
+for _, obj in ipairs(workspace:GetDescendants()) do
+    deleteHitbox(obj)
 end
 
--- 6. التشغيل الفوري
-deleteAllExisting()
-blockRespawn()
+-- 6. بدء المراقبة المستمرة (في كوروتين منفصل)
+coroutine.wrap(continuousMonitoring)()
 
-print("✅ السكريبت يعمل: حذف كل Hitboxes ومنع spawnها (بدون لمس الأجزاء الأخرى)")
+print("✅ السكريبت يعمل: مراقبة مستمرة (كل 0.5 ثانية) لحذف أي Hitbox")
