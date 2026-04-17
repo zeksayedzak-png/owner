@@ -1,68 +1,12 @@
--- سكريبت: حذف التسونامي (تلقائي بالكامل)
+-- سكريبت: حذف كل Hitboxes (باسمها) ومنع spawnها (تلقائي)
 local player = game.Players.LocalPlayer
 
--- 1. قائمة المسارات (من التحليل السابق)
-local tsunamiPaths = {
-    "Workspace.ActiveTsunamis.LowWave.Hitbox",
-    "Workspace.Wave4_Visual.Hitbox",
-    "Workspace.Wave2_Visual.Hitbox",
-    "Workspace.Wave3_Visual.Hitbox",
-    "Workspace.WonkyWave_Visual.Hitbox",
-    "Workspace.Wave5_Visual.Hitbox",
-    "Workspace.SnakeWave_Visual.Hitbox"
-}
-
--- 2. قائمة الصفات (لأي Part جديد قد لا يكون في المسارات)
-local tsunamiTraits = {
-    { size = Vector3.new(2.8, 3.1, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 19.7, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 51.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 28.8, 86.7), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 34.1, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 18.1, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 33.0, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 18.5, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 19.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 28.8, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 24.4, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 28.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 70.8, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 29.2, 260.0), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic },
-    { size = Vector3.new(25.5, 28.8, 112.7), color = Color3.new(0.64, 0.64, 0.65), material = Enum.Material.Plastic }
-}
-
--- 3. قائمة الأسماء (احتياطي أخير)
+-- 1. قائمة الأسماء المستهدفة (من التحليل السابق)
 local targetNames = {"Hitbox", "Hitbox1", "Hitbox2"}
 
--- 4. وظيفة الحصول على Part من مسار
-local function getPartFromPath(path)
-    local parts = {}
-    for part in string.gmatch(path, "[^%.]+") do
-        table.insert(parts, part)
-    end
-    local current = workspace
-    for _, partName in ipairs(parts) do
-        if current then
-            current = current:FindFirstChild(partName)
-        else
-            break
-        end
-    end
-    return current
-end
-
--- 5. التحقق من الصفات
-local function matchesTraits(part)
-    for _, trait in ipairs(tsunamiTraits) do
-        if part.Size == trait.size and part.Color == trait.color and part.Material == trait.material then
-            return true
-        end
-    end
-    return false
-end
-
--- 6. التحقق من الاسم
-local function matchesName(part)
+-- 2. وظيفة التحقق من أن الـ Part هو Hitbox (باسمه فقط)
+local function isHitbox(part)
+    if not part:IsA("BasePart") then return false end
     for _, name in ipairs(targetNames) do
         if part.Name == name then
             return true
@@ -71,32 +15,21 @@ local function matchesName(part)
     return false
 end
 
--- 7. وظيفة الحذف الشاملة
-local function isTsunamiPart(part)
-    if not part:IsA("BasePart") then return false end
-    return matchesTraits(part) or matchesName(part)
-end
-
-local function deletePart(part)
-    if isTsunamiPart(part) then
+-- 3. حذف الـ Hitbox
+local function deleteHitbox(part)
+    if isHitbox(part) then
         part:Destroy()
-        print("🗑️ تم حذف: " .. part:GetFullName())
+        print("🗑️ تم حذف Hitbox: " .. part:GetFullName())
         return true
     end
     return false
 end
 
--- 8. حذف الموجود حالياً (بالمسارات والصفات)
+-- 4. حذف جميع الـ Hitboxes الموجودة حالياً
 local function deleteAllExisting()
     local count = 0
-    for _, path in ipairs(tsunamiPaths) do
-        local part = getPartFromPath(path)
-        if deletePart(part) then
-            count = count + 1
-        end
-    end
     for _, obj in ipairs(workspace:GetDescendants()) do
-        if deletePart(obj) then
+        if deleteHitbox(obj) then
             count = count + 1
         end
     end
@@ -104,15 +37,17 @@ local function deleteAllExisting()
     return count
 end
 
--- 9. منع إعادة spawn (مراقبة مستمرة)
+-- 5. منع إعادة spawn (مراقبة الإضافات الجديدة)
 local function blockRespawn()
     workspace.DescendantAdded:Connect(function(obj)
-        deletePart(obj)
+        if deleteHitbox(obj) then
+            print("🚫 تم منع spawn Hitbox: " .. obj:GetFullName())
+        end
     end)
 end
 
--- 10. التشغيل الفوري (بدون أي أزرار)
+-- 6. التشغيل الفوري
 deleteAllExisting()
 blockRespawn()
 
-print("✅ السكريبت يعمل تلقائياً (بدون أزرار)")
+print("✅ السكريبت يعمل: حذف كل Hitboxes ومنع spawnها (بدون لمس الأجزاء الأخرى)")
